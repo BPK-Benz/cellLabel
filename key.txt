@@ -1,0 +1,25 @@
+window = 'merge'
+ |-- key q: exit
+ |-- key  : pick color
+ |-- mouse: merge or remove
+ |-- key a: prev image
+ |-- key d: next image
+ |-- key w: prev view
+ |-- key s: next view
+ |-- key z: save
+ |-- key x: export
+ |-- key c: default label
+ |-- key v: go to draw mode
+ |-- key m: change mode
+
+window = 'draw'
+ |-- mode = 'nucleus'
+ |    |-- key q: return
+ |    |-- key v: save and return
+ |    |-- mouse: put dot
+ |    |-- key b: pop dot
+ |-- mode = 'cytoplasm'
+      |-- key q: return
+      |-- key v: save and return
+      |-- mouse: put dot
+      |-- key b: pop dot
