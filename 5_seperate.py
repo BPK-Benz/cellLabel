@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
 	# load coco
 	coco_path = os.path.join(root, "data/output_export/coco.json")
-	# coco_path = os.path.join(root, "data/output_export/S1/Plate_07/Testing_set/coco.json")
+	coco_path = os.path.join(root, "data/output_export/S1/Plate_03/Testing_set/coco.json")
 	coco = load_coco(coco_path)
 	print("[ Finish Loading ]")
 

@@ -40,14 +40,17 @@ def maps_annotations(coco):
 if __name__ == '__main__':
 
 
-	config = '../../configs/mask_rcnn/mask_rcnn_r50_fpn_1x_cell.py'
-	checkpoint = '../../work_dirs/mask_rcnn_r50_fpn_1x_cell/latest.pth'
+	# config = '../../configs/mask_rcnn/mask_rcnn_r50_fpn_1x_cell.py'
+	# checkpoint = '../../work_dirs/mask_rcnn_r50_fpn_1x_cell/latest.pth'
+
+	config = '../../configs/mask_rcnn/mask_rcnn_r50_fpn_1x_bacteria.py'
+	checkpoint = '../../work_dirs/mask_rcnn_r50_fpn_1x_bacteria/latest.pth'
 
 	model = init_detector(config, checkpoint, device='cuda:0')
 
 	# make path
 	root = ''
-	coco_path = os.path.join(root, "train.json")
+	coco_path = os.path.join(root, "test.json")
 
 	# init parameters
 	if os.path.exists(coco_path):
@@ -56,10 +59,9 @@ if __name__ == '__main__':
 		print('Error: COCO file not exists.')
 		exit()
 	cats = maps_categories(coco)
-	cats = {1: {'supercategory': 'nucleus', 'id': 2, 'name': 'nucleus'}, 2: {'supercategory': 'cell', 'id': 3, 'name': 'cell'}}
 	anns = maps_annotations(coco)
 	total = len(coco["images"])
-	index = 0
+	index = 180
 
 	# main loop
 	while True:
@@ -68,45 +70,43 @@ if __name__ == '__main__':
 		image_id = coco["images"][index]["id"]
 		image_path = root + coco["images"][index]["file_name"]
 		image = cv2.imread(image_path)
-		image = cv2.resize(image, (0, 0), fx=1/4*3, fy=1/4*3)
 		print('image_path', image_path)
 
 		# # draw ground truth
-		# for ann in anns[image_id]:
+		for ann in anns[image_id]:
 
-		# 	# get label data
-		# 	bbox = ann["bbox"]
-		# 	category_id = ann["category_id"]
-		# 	name = cats[category_id]['name']
+			# get label data
+			bbox = ann["bbox"]
+			category_id = ann["category_id"]
+			name = cats[category_id]['name']
+			if name != 'bacteria': continue
 
-		# 	# show bbox and image
-		# 	x, y, w, h = bbox
-		# 	# color = colors[category_id]
-		# 	color = (0, 255, 0)
-		# 	cv2.rectangle(image, (x, y), (x+w, y+h), color, 2)
-		# 	cv2.putText(image, name, (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv2.LINE_AA)
+			# show bbox and image
+			x, y, w, h = bbox
+			# color = colors[category_id]
+			color = (0, 255, 0)
+			# cv2.rectangle(image, (x, y), (x+w, y+h), color, 2)
+			cv2.putText(image, name, (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv2.LINE_AA)
 
 
 		# draw detected
 		img = mmcv.imread(image_path)
-		img = cv2.resize(img, (0, 0), fx=1/4*3, fy=1/4*3)
 		results, masks = inference_detector(model, img)
 		for i in range(len(results)):
 			result = results[i]
 			category_id = i + 1
 			for box in result:
 				x1, y1, x2, y2, c = box
-				if c < 0.1: continue
+				if c < 0.3: continue
 				x1, y1, x2, y2 = [int(j) for j in [x1, y1, x2, y2]]
 				name = cats[category_id]['name']
 				# color = colors[category_id]
 				color = (0, 0, 255)
-				color = (0, 255, 0)
-				cv2.rectangle(image, (x1, y1), (x2, y2), color, 1)
+				color = (255, 255, 0)
+				# cv2.rectangle(image, (x1, y1), (x2, y2), color, 2)
 				cv2.putText(image, name, (x1, y1+10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv2.LINE_AA)
 
 		# display
-		# image = cv2.resize(image, (0, 0), fx=4/3, fy=4/3)
 		cv2.imshow('display', image)
 		output_path = 'data/output_test/' + str(index) + '.png'
 		cv2.imwrite(output_path, image)

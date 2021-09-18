@@ -103,6 +103,7 @@ def mouse_event(event, x, y, flags, param):
 
 			x = int(x/scale)
 			y = int(y/scale)
+			padding = 7
 
 			# if remove bacteria
 			if remove_bac:
@@ -114,10 +115,10 @@ def mouse_event(event, x, y, flags, param):
 			else:
 				image.count1 += 1
 				con = np.array([
-								[[x-5, y-5]],
-								[[x-5, y+5]],
-								[[x+5, y+5]],
-								[[x+5, y-5]],
+								[[x-padding, y-padding]],
+								[[x-padding, y+padding]],
+								[[x+padding, y+padding]],
+								[[x+padding, y-padding]],
 							])
 				image.bacteria[image.count1] = {
 					'contour': con,
@@ -696,7 +697,7 @@ if __name__ == '__main__':
 
 	# set path
 	root = os.path.dirname(os.path.realpath(__file__))
-	direct = 'S1/Plate_12/Testing_set'
+	direct = 'S1/Plate_03/Testing_set'
 	print(direct)
 	original_path = os.path.join(root, "data/Reference_gene", direct)
 	cellprofiler_path = os.path.join(root, "data/Output_Reference_gene", direct)
@@ -729,7 +730,7 @@ if __name__ == '__main__':
 	isPressed = False
 
 	# auto generate localization
-	auto()
+	# auto()
 
 	# loop over different field
 	while True:

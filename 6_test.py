@@ -87,7 +87,6 @@ if __name__ == '__main__':
 	# main loop
 	while True:
 
-
 		# draw detected
 		img = mmcv.imread(image_path)
 		results, masks = inference_detector(model, img)
