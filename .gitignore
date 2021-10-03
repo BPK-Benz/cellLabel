@@ -2,4 +2,3 @@ data/
 source/
 train.json
 test.json
-utils/__pycache__/
