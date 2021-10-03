@@ -25,7 +25,7 @@ def add_licenses():
 		}
 	]
 
-# label: categories
+# label: categories = divide
 def add_categories():
 	return [
 		{
@@ -42,30 +42,5 @@ def add_categories():
 			"supercategory": 'cell',
 			"id": 3,
 			"name": 'cell',
-		}
-	]
-
-# label: categories
-def add_categories_detailed():
-	return [
-		{
-			"supercategory": 'bacteria',
-			"id": 1,
-			"name": 'bacteria',
-		},
-		{
-			"supercategory": 'nucleus',
-			"id": 2,
-			"name": 'nucleus',
-		},
-		{
-			"supercategory": 'cell',
-			"id": 3,
-			"name": 'common_cell',
-		},
-		{
-			"supercategory": 'cell',
-			"id": 4,
-			"name": 'dividing_cell',
 		}
 	]
