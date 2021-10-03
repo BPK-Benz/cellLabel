@@ -130,6 +130,7 @@ class CocoCellsImage:
 				cv2.fillPoly(overlay, pts =[contour], color=color)
 
 			image = cv2.addWeighted(image, 1, overlay, 0.3, 0)
+			image[ch2 > 127] = (0, 255, 0)
 
 		# draw poly and bbox
 		for i in range(len(self.label)):

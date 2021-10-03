@@ -22,18 +22,66 @@ def create_coco():
     }
 
 
+# def condition(annotation=None):
+#     if not annotation:
+#         return [
+#             {
+#                 "supercategory": 'cell',
+#                 "id": 1,
+#                 "name": 'complete',
+#             },
+#             {
+#                 "supercategory": 'cell',
+#                 "id": 2,
+#                 "name": 'border',
+#             },
+#             {
+#                 "supercategory": 'cell',
+#                 "id": 3,
+#                 "name": 'divide',
+#             },
+#             {
+#                 "supercategory": 'cell',
+#                 "id": 4,
+#                 "name": 'border + divide',
+#             },
+#         ]
+#     else:
+
+#         channel = annotation['channel']
+#         divide = annotation['divide']
+#         border = annotation['border']
+#         infect = annotation['infect']
+
+#         if channel == 'nucleus':
+#             return 0
+
+#         if not border and not divide:
+#             return 1
+#         elif border and not divide:
+#             return 2
+#         elif not border and divide:
+#             return 3
+#         else:
+#             return 4
+
 def condition(annotation=None):
     if not annotation:
         return [
             {
-                "supercategory": 'cell',
+                "supercategory": 'nucleus',
                 "id": 1,
-                "name": 'non-border',
+                "name": 'non-infected',
             },
             {
-                "supercategory": 'cell',
+                "supercategory": 'nucleus',
                 "id": 2,
-                "name": 'border',
+                "name": 'cytocell',
+            },
+            {
+                "supercategory": 'nucleus',
+                "id": 3,
+                "name": 'nuccell',
             },
         ]
     else:
@@ -43,13 +91,15 @@ def condition(annotation=None):
         border = annotation['border']
         infect = annotation['infect']
 
-        if channel == 'nucleus':
+        if channel == 'cell':
             return 0
 
-        if not border:
+        if infect == 'non-infected':
             return 1
-        else:
+        if infect == 'cytocell':
             return 2
+        if infect == 'nuccell':
+            return 3
 
 if __name__ == "__main__":
 
@@ -64,8 +114,8 @@ if __name__ == "__main__":
     data = {
         'train': {
             'src':[
-                'data/output_coco/S1/Plate_07/Testing_set',
-                'data/output_coco/S1/Plate_08/Testing_set',
+                # 'data/output_coco/S1/Plate_07/Testing_set',
+                # 'data/output_coco/S1/Plate_08/Testing_set',
             ],
             'dst': 'train.json',
         },
