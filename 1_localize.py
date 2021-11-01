@@ -207,7 +207,7 @@ class cellPlate: # managing folders for source and target
         self.scale = 0.9
         self.mouse = 0, 0
 
-        self.is_export = True  # to save time export should be False and changing it when localization and labeling are completed
+        self.is_export = False  # to save time export should be False and changing it when localization and labeling are completed
         self.is_auto = False   # If is_export is True, is_auto shoul be True as well to automatic changing images (every change images are saved)
 
         # automatic 
@@ -233,6 +233,7 @@ class cellPlate: # managing folders for source and target
 
         # change window title
         name = self.names[self.index]
+        # name = '008016-6-001001'
         title = "{} | {} of {}".format(name, self.index+1, self.total)
         root.winfo_toplevel().title(title)
 
@@ -492,42 +493,47 @@ class cellPlate: # managing folders for source and target
         ret, thresh = cv2.threshold(edge, 127, 255, cv2.THRESH_BINARY)
         contours, hierarchy = cv2.findContours(thresh.copy(),cv2.RETR_CCOMP,cv2.CHAIN_APPROX_SIMPLE)
 
-        # load center from cell profiler
-        centers = self.get_centers(self.profile2)
-
-        # identify each cell
-        count = 0
+        # calculate areas and centroids
+        areas = [cv2.contourArea(contour) for contour in contours]
+        centroids = []
         for con, hie in zip(contours, hierarchy[0]):
-
-            # filter out the noise
-            area = cv2.contourArea(con)
-            if area < 200: continue
-            if area > 80000: continue
-            # if hie[2] != -1: continue
-
-            # calculate centroid
             M = cv2.moments(con)
             cx = int(M["m10"] / M["m00"])
             cy = int(M["m01"] / M["m00"])
+            centroids.append([cx, cy])
 
-            # calculate min diff
-            for x, y in centers.copy():
-                if abs(cx-x) + abs(cy-y) < 25:
+        # skip 
+        skips = []
+        skips += [i for i in range(len(areas)) if areas[i] < 200]
+        skips += [i for i in range(len(areas)) if areas[i] > 80000]
 
-                    # make label
-                    count += 1
+        # load center from cell profiler
+        centers = self.get_centers(self.profile2)
+
+        # identify each nucleus
+        count = 1
+        for x, y in centers:
+            min_area = 80001
+            for i in range(len(contours)):
+                if i in skips: continue
+                cx, cy = centroids[i]
+                area = areas[i]
+                contour = contours[i]
+                if abs(cx-x) + abs(cy-y) < 25 and area < min_area:
+                    min_area = area
+                    skips.append(i)
                     self.nucleus[count] = {
                         'index': 1,
                         'divide': 0,
                         'border': 0,
-                        'contour': con,
+                        'contour': contour,
                         'centroid': [cx, cy],
                     }
 
-                    # prevent duplicate 
-                    centers.remove([x, y])
+            if not min_area == 80001:
+                count += 1
 
-        self.count2 = count
+        self.count2 = count - 1
 
     def label_boundary(self):
 
@@ -557,42 +563,35 @@ class cellPlate: # managing folders for source and target
         ret, thresh = cv2.threshold(edge, 127, 255, cv2.THRESH_BINARY)
         contours, hierarchy = cv2.findContours(thresh.copy(),cv2.RETR_CCOMP,cv2.CHAIN_APPROX_SIMPLE)
 
-        # load center
-        centers = self.get_centers(self.profile3)
-
-        # warning: check if points are overlap
-        finished = []
-
-        # identify each cell
-        count = 0
-        for contour, hie in zip(contours, hierarchy[0]):
-
-            # filter out the noise
-            area = cv2.contourArea(contour)
-            if area < 400: continue
-            if area > 80000: continue
-            # if hie[2] != -1: continue
-
-            # calculate centroid
-            M = cv2.moments(contour)
+        # calculate areas and centroids
+        areas = [cv2.contourArea(contour) for contour in contours]
+        centroids = []
+        for con, hie in zip(contours, hierarchy[0]):
+            M = cv2.moments(con)
             cx = int(M["m10"] / M["m00"])
             cy = int(M["m01"] / M["m00"])
+            centroids.append([cx, cy])
 
-            # prevent duplicate 
-            # (code line 'centers.remove([x, y])' is a more efficient way)
-            # is_duplicate = False
-            # for x, y in finished:
-            #     if abs(cx-x) + abs(cy-y) < 25:
-            #         is_duplicate = True
-            # if is_duplicate: continue
-            # finished.append([cx, cy])
-            
-            # calculate min diff
-            for x, y in centers.copy():
-                if abs(cx-x) + abs(cy-y) < 25:
+        # skip 
+        skips = []
+        skips += [i for i in range(len(areas)) if areas[i] < 200]
+        skips += [i for i in range(len(areas)) if areas[i] > 80000]
 
-                    # make label
-                    count += 1
+        # load center from cell profiler
+        centers = self.get_centers(self.profile3)
+
+        # identify each cell
+        count = 1
+        for x, y in centers:
+            min_area = 80001
+            for i in range(len(contours)):
+                if i in skips: continue
+                cx, cy = centroids[i]
+                area = areas[i]
+                contour = contours[i]
+                if abs(cx-x) + abs(cy-y) < 25 and area < min_area:
+                    min_area = area
+                    skips.append(i)
                     self.cytoplasm[count] = {
                         'index': count,
                         'divide': 0,
@@ -601,10 +600,10 @@ class cellPlate: # managing folders for source and target
                         'centroid': [cx, cy],
                     }
 
-                    # prevent duplicate 
-                    centers.remove([x, y])
+            if not min_area == 80001:
+                count += 1
 
-        self.count3 = count
+        self.count3 = count - 1
 
         if self.init_border:
             self.label_boundary()
@@ -689,7 +688,6 @@ class cellPlate: # managing folders for source and target
 
         if not ever_calc_border and self.init_border:
             self.label_boundary()
-
 
     # save label to csv file for bacteria after moving to next image
     def save_bacteria(self):
@@ -979,6 +977,7 @@ class cellPlate: # managing folders for source and target
                 "divide": int(self.cytoplasm[key]['divide']),
                 "border": int(self.cytoplasm[key]['border']),
                 "infect": infect,
+                "iscrowd": 0,
                 "area": features2['area'],
                 "image_id": count_image,
                 "bbox": features2['rectangle'],
@@ -995,6 +994,7 @@ class cellPlate: # managing folders for source and target
                 "divide": int(self.cytoplasm[key]['divide']),
                 "border": int(self.cytoplasm[key]['border']),
                 "infect": infect,
+                "iscrowd": 0,
                 "area": features3['area'],
                 "image_id": count_image,
                 "bbox": features3['rectangle'],
@@ -1253,7 +1253,7 @@ def onMouseMotion(event):
     elif image.mode in ['draw_nucleus', 'draw_cell']:
 
         # mouse motion + left mouse down
-        if event.state in [264, 272]:
+        if event.state in [256, 264, 272]:
 
             # append the drawing line
             if len(image.new_contour):
@@ -1541,8 +1541,8 @@ if __name__ == "__main__":
     panel = tkinter.Label(root)
     panel.pack()
 
+    navigation = 'S1/Plate_04/Training_set'
     navigation = 'S1/Plate_03/Testing_set'
-    # navigation = 'Error'
     image = cellPlate(navigation)
 
     root.bind('<Motion>', onMouseMotion)

@@ -22,66 +22,18 @@ def create_coco():
     }
 
 
-# def condition(annotation=None):
-#     if not annotation:
-#         return [
-#             {
-#                 "supercategory": 'cell',
-#                 "id": 1,
-#                 "name": 'complete',
-#             },
-#             {
-#                 "supercategory": 'cell',
-#                 "id": 2,
-#                 "name": 'border',
-#             },
-#             {
-#                 "supercategory": 'cell',
-#                 "id": 3,
-#                 "name": 'divide',
-#             },
-#             {
-#                 "supercategory": 'cell',
-#                 "id": 4,
-#                 "name": 'border + divide',
-#             },
-#         ]
-#     else:
-
-#         channel = annotation['channel']
-#         divide = annotation['divide']
-#         border = annotation['border']
-#         infect = annotation['infect']
-
-#         if channel == 'nucleus':
-#             return 0
-
-#         if not border and not divide:
-#             return 1
-#         elif border and not divide:
-#             return 2
-#         elif not border and divide:
-#             return 3
-#         else:
-#             return 4
-
 def condition(annotation=None):
     if not annotation:
         return [
             {
-                "supercategory": 'nucleus',
+                "supercategory": 'cell_fused',
                 "id": 1,
-                "name": 'non-infected',
+                "name": 'divide_cell',
             },
             {
-                "supercategory": 'nucleus',
+                "supercategory": 'cell_fused',
                 "id": 2,
-                "name": 'cytocell',
-            },
-            {
-                "supercategory": 'nucleus',
-                "id": 3,
-                "name": 'nuccell',
+                "name": 'not_divided_cell',
             },
         ]
     else:
@@ -92,39 +44,29 @@ def condition(annotation=None):
         infect = annotation['infect']
 
         if channel == 'cell':
+            if divide:
+                return 1
+            else:
+                return 2
+        else:
             return 0
 
-        if infect == 'non-infected':
-            return 1
-        if infect == 'cytocell':
-            return 2
-        if infect == 'nuccell':
-            return 3
 
 if __name__ == "__main__":
 
-    conditions = {
-        'cell': False,
-        'nucleus': True, # x 2
-        'divide': False, # x 2
-        'border': False, # x 2
-        'infect': False  # x 3
-    }
-
     data = {
-        'train': {
-            'src':[
-                # 'data/output_coco/S1/Plate_07/Testing_set',
-                # 'data/output_coco/S1/Plate_08/Testing_set',
-            ],
-            'dst': 'train.json',
-        },
-        'test': {
+        'groundtruth': {
             'src':[
                 'data/output_coco/S1/Plate_03/Testing_set',
             ],
-            'dst': 'test.json',
-        }
+            'dst': 'groundtruth.json',
+        },
+        # 'image_processing': {
+        #     'src':[
+        #         'data/output_predicted1/S1/Plate_03/Testing_set',
+        #     ],
+        #     'dst': 'image_processing.json',
+        # },
     }
 
     for key in data:
@@ -160,11 +102,16 @@ if __name__ == "__main__":
                 new_annotations = []
                 for a in range(len(annotations)):
                     label = condition(annotations[a])
-                    if label == 0: continue
+                    if not label: continue
                     coco_object = {
+                        'channel': annotations[a]['channel'],
+                        'divide': annotations[a]['divide'],
+                        'border': annotations[a]['border'],
+                        'infect': annotations[a]['infect'],
                         'category_id': label,
                         'image_id': new_image_ids[annotations[a]['image_id']],
                         'id': count_annotation,
+                        'iscrowd': 0,
                         'area': annotations[a]['area'],
                         'bbox': annotations[a]['bbox'],
                         'segmentation': annotations[a]['segmentation'],

@@ -5,10 +5,8 @@ import numpy as np
 import pandas as pd
 import colorsys
 
-# mode = mark: color dictioanary
 def make_colors(variation):
     hues = np.linspace(0, 1, variation+1)[:-1]
-    variation = [[int(255*c) for c in colorsys.hsv_to_rgb(h, 1, 1)] for h in hues]
     variation = [[int(255*c) for c in colorsys.hsv_to_rgb(h, 1, 1)] for h in hues]
     colors = [[0, 0, 0]]
     colors += variation
@@ -18,6 +16,7 @@ def make_colors(variation):
 def read_coco():
 	with open(coco_path) as file:
 		d = json.load(file)
+	print('[ Finished Read COCO ]')
 	return d
 
 def read_categories(coco):
@@ -31,6 +30,7 @@ def read_categories(coco):
 			'name': coco['categories'][c]['name'],
 			'color': colors[c+1]
 		}
+	print('[ Finished Read Categories ]')
 	return categories
 
 def read_anno(coco):
@@ -41,6 +41,7 @@ def read_anno(coco):
 			maps[image_id] = [i]
 		else:
 			maps[image_id].append(i)
+	print('[ Finished Read Annotations ]')
 	return maps
 
 def mouse_event(event, x, y, flags, param):
@@ -78,8 +79,9 @@ class CocoCellsImage:
 
 		# get coco label
 		self.label = []
-		for j in maps[coco['images'][index]['id']]:
-			self.label.append(coco['annotations'][j])
+		if coco['images'][index]['id'] in maps:
+			for j in maps[coco['images'][index]['id']]:
+				self.label.append(coco['annotations'][j])
 
 		# to display on mouse hover
 		self.hovers = []
@@ -154,7 +156,7 @@ class CocoCellsImage:
 				name = categories[category_id]['name']
 				color = categories[category_id]['color']
 				cv2.fillPoly(image, pts =[contour], color=color)
-				print(name)
+				print(len(self.hovers), name)
 
 		return image
 
@@ -172,8 +174,10 @@ if __name__ == "__main__":
 	root = os.path.dirname(os.path.realpath(__file__))
 
 	# load coco data
-	coco_path = os.path.join(root, "data/output_coco/S1/Plate_03/Testing_set/013015-9-001001.json")
-	coco_path = os.path.join('test.json')
+	coco_path = os.path.join(root, "data/output_coco/S1/Plate_03/Testing_set/003007-5-001001.json")
+	# coco_path = os.path.join(root, "data/output_predicted1/S1/Plate_03/Training/001001-1-001001.json")
+	coco_path = 'groundtruth.json'
+	# coco_path = 'test.json'
 	coco = read_coco()
 	categories = read_categories(coco)
 	maps = read_anno(coco)
@@ -186,18 +190,18 @@ if __name__ == "__main__":
 	# Initialize parameters
 	showing = {
 
-		# channel
 		'bacteria': True,
 		'nucleus': False,
 		'cell': True,
 
-		# draw
 		'bbox': False,
 		'poly': False,
 
 	}
 	hovering = {
+
 		'fill': True,
+	
 	}
 	modes = ['color', 'gray', 'overlay']
 	mode = 'overlay'
