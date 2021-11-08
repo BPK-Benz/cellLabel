@@ -61,12 +61,12 @@ if __name__ == "__main__":
             ],
             'dst': 'groundtruth.json',
         },
-        # 'image_processing': {
-        #     'src':[
-        #         'data/output_predicted1/S1/Plate_03/Testing_set',
-        #     ],
-        #     'dst': 'image_processing.json',
-        # },
+        'image_processing': {
+            'src':[
+                'data/output_predicted1/S1/Plate_03/Testing_set',
+            ],
+            'dst': 'image_processing.json',
+        },
     }
 
     for key in data:
