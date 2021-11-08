@@ -154,12 +154,12 @@ class cellPlate: # managing folders for source and target
         self.cellprofiler_path = os.path.join("r", self.root_path, "data/Output_CP", self.navigation)
 
         # output paths, hint: put "r" to usable all os for reading pathway
-        self.localize_path = os.path.join("r", self.root_path, "data/output_localize", self.navigation)
-        self.image_path = os.path.join("r", self.root_path, "data/output_image", self.navigation)
-        self.segment1_path = os.path.join("r", self.root_path, "data/output_segment1", self.navigation)
-        self.segment3_path = os.path.join("r", self.root_path, "data/output_segment3", self.navigation)
-        self.coco_path = os.path.join("r", self.root_path, "data/output_coco", self.navigation)
-        self.properties_path = os.path.join("r", self.root_path, "data/output_properties", self.navigation)
+        self.localize_path = os.path.join("r", self.root_path, "data/output_localize_ip", self.navigation)
+        self.image_path = os.path.join("r", self.root_path, "data/output_image_ip", self.navigation)
+        self.segment1_path = os.path.join("r", self.root_path, "data/output_segment1_ip", self.navigation)
+        self.segment3_path = os.path.join("r", self.root_path, "data/output_segment3_ip", self.navigation)
+        self.coco_path = os.path.join("r", self.root_path, "data/output_coco_ip", self.navigation)
+        self.properties_path = os.path.join("r", self.root_path, "data/output_properties_ip", self.navigation)
 
         # create save path if not exists
         if not os.path.exists(self.localize_path): os.makedirs(self.localize_path)

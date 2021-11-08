@@ -170,8 +170,6 @@ if __name__ == "__main__":
 
 			if feature != 'divide': continue
 
-			print('-'*80)
-
 			# loop for each category
 			for category in scores[feature]:
 
