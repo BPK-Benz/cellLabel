@@ -207,8 +207,8 @@ class cellPlate: # managing folders for source and target
         self.scale = 0.9
         self.mouse = 0, 0
 
-        self.is_export = True  # to save time export should be False and changing it when localization and labeling are completed
-        self.is_auto = True   # If is_export is True, is_auto shoul be True as well to automatic changing images (every change images are saved)
+        self.is_export = False  # to save time export should be False and changing it when localization and labeling are completed
+        self.is_auto = False   # If is_export is True, is_auto shoul be True as well to automatic changing images (every change images are saved)
 
         # automatic 
         if self.is_auto:
