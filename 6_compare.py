@@ -1,10 +1,7 @@
 import os
-import cv2
 import json
-import numpy as np
+import pandas as pd
 
-# import mmcv
-# from mmdet.apis import inference_detector, init_detector, show_result_pyplot
 
 def load_coco(coco_path):
     with open(coco_path) as file:
@@ -72,101 +69,108 @@ def get_iou(bb1, bb2):
     assert iou <= 1.0
     return iou
 
+def checksum(scores):
+	total = 0
+	for name in scores:
+		total += scores[name]['tp']
+		total += scores[name]['fn']
+	return total
+
+def condition(annotation=None):
+    if not annotation:
+        return [
+            {
+                "supercategory": 'cell_fused',
+                "id": 1,
+                "name": 'divide_cell',
+            },
+            {
+                "supercategory": 'cell_fused',
+                "id": 2,
+                "name": 'not_divided_cell',
+            },
+        ]
+    else:
+
+        channel = annotation['channel']
+        divide = annotation['divide']
+        border = annotation['border']
+        infect = annotation['infect']
+
+        if channel == 'cell':
+            if divide:
+                return 1
+            else:
+                return 2
+        else:
+            return 0
+
+
 if __name__ == "__main__":
 
-	annotations = [
-		{
-			'name': 'groundtruth',
-			'type': 'label',
-			'dataset': [
-				'S1/Plate_03/Testing_set',
-			],
-			'label_path': 'groundtruth.json',
-		},
-		{
-			'name': 'image_processing',
-			'type': 'label',
-			'dataset': [
-				'S1/Plate_03/Testing_set',
-			],
-			'label_path': 'image_processing.json',
-		},
-		{
-			'name': 'faster-rcnn resnet101 2-classes',
-			'type': 'model',
-			'dataset': [
-				'S1/Plate_03/Testing_set',
-			],
-			'model_path': 'source/latest.pth',
-			'config_path': '../../configs/faster_rcnn/faster_rcnn_r50_fpn_2x_cell_2Class_GT.py',
-		},
-	]
-
-	gts = load_coco(annotations[0]['label_path'])
+	# ground truth
+	gts_path = 'groundtruth.json'
+	gts = load_coco(gts_path)
 	gts_maps = read_anno(gts)
 
-	p1s = load_coco(annotations[1]['label_path'])
-	p1s_maps = read_anno(p1s)
-
-	# config = annotations[2]['config_path']
-	# checkpoint = annotations[2]['model_path']
-	# model = init_detector(config, checkpoint, device='cuda:0')
-
-	threshold_iou = 0.5
+	# image processing
+	pds_path = 'image_processing.json'
+	pds_path = 'cnn_prediction.json'
+	pds = load_coco(pds_path)
+	pds_maps = read_anno(pds)
 
 	images = gts['images']
 	total = len(images)
 	total_instances = 0
 
-	scores = {
-		'border': {
-				0: { 'tp': 0, 'fp': 0, 'fn': 0 },
-				1: { 'tp': 0, 'fp': 0, 'fn': 0 },
-		},
-		'divide': {
-				0: { 'tp': 0, 'fp': 0, 'fn': 0 },
-				1: { 'tp': 0, 'fp': 0, 'fn': 0 },
-		},
-		'infect': {
-				'non-infected': { 'tp': 0, 'fp': 0, 'fn': 0 },
-				'cytocell': { 'tp': 0, 'fp': 0, 'fn': 0 },
-				'nuccell': { 'tp': 0, 'fp': 0, 'fn': 0 },
-		},
-	}
-	conditions = {
-		'perfect': {'tp': 0, 'fp': 0, 'fn': 0},
-		'other': {'tp': 0, 'fp': 0, 'fn': 0},
-	}
+	categories = condition()
+	columns = []
+	scores = {}
+	for c in categories:
+		scores[c['name']] = { 'tp': 0, 'fp': 0, 'fn': 0 }
+		columns += [
+			c['name'] + '_tp',
+			c['name'] + '_fp',
+			c['name'] + '_fn',
+		]
+	df = pd.DataFrame(columns=columns)
+
+	threshold_iou = 0.5
 
 	# loop for each images
 	for index in range(total):
 
+		# print progress
 		# print('[ Processing {} of {} ]'.format(index, total))
+		row = {}
 
-		# get groundtruth labels of 1 image
+		# get all sample
 		gt = []
 		if gts['images'][index]['id'] in gts_maps:
 			for j in gts_maps[gts['images'][index]['id']]:
-				gt.append(gts['annotations'][j])
+				d = gts['annotations'][j]
+				d['class'] = condition(d)
+				gt.append(d)
 		total_instances += len(gt)
 
-		# get image processing labels of 1 image
-		p1 = []
-		if p1s['images'][index]['id'] in p1s_maps:
-			for j in p1s_maps[p1s['images'][index]['id']]:
-				p1.append(p1s['annotations'][j])
-		
-		for key in conditions:
+		# get all predict
+		pd = []
+		if pds['images'][index]['id'] in pds_maps:
+			for j in pds_maps[pds['images'][index]['id']]:
+				d = pds['annotations'][j]
+				if 'score' in d:
+					d['class'] = d['category_id']
+				else:
+					d['class'] = condition(d)
+				pd.append(d)
 
-			if key == 'perfect':
-				filtered_gt = [o for o in gt if o['border'] == False and o['divide'] == False]
-				filtered_p1 = [o for o in p1 if o['border'] == False and o['divide'] == False]
-			else:
-				filtered_gt = [o for o in gt if not (o['border'] == False and o['divide'] == False)]
-				filtered_p1 = [o for o in p1 if not (o['border'] == False and o['divide'] == False)]
+		for c in categories:
+
+			filtered_gt = [o for o in gt if o['class'] == c['id']]
+			filtered_pd = [o for o in pd if o['class'] == c['id']]
 
 			matched_gt = []
-			matched_p1 = []
+			matched_pd = []
 
 			for i in range(len(filtered_gt)):
 				bbox1 = {
@@ -175,38 +179,54 @@ if __name__ == "__main__":
 					'x2': filtered_gt[i]['bbox'][0] + filtered_gt[i]['bbox'][2],
 					'y2': filtered_gt[i]['bbox'][1] + filtered_gt[i]['bbox'][3],
 				}
-				for j in range(len(filtered_p1)):
+				for j in range(len(filtered_pd)):
 					bbox2 = {
-						'x1': filtered_p1[j]['bbox'][0],
-						'y1': filtered_p1[j]['bbox'][1],
-						'x2': filtered_p1[j]['bbox'][0] + filtered_p1[j]['bbox'][2],
-						'y2': filtered_p1[j]['bbox'][1] + filtered_p1[j]['bbox'][3],
+						'x1': filtered_pd[j]['bbox'][0],
+						'y1': filtered_pd[j]['bbox'][1],
+						'x2': filtered_pd[j]['bbox'][0] + filtered_pd[j]['bbox'][2],
+						'y2': filtered_pd[j]['bbox'][1] + filtered_pd[j]['bbox'][3],
 					}
 					iou = get_iou(bbox1, bbox2)
-					if iou > threshold_iou:
+					if iou >= threshold_iou:
 						matched_gt += [i]
-						matched_p1 += [j]
+						matched_pd += [j]
 
 			tps = set(matched_gt)
-			fps = [j for j in range(len(filtered_p1)) if not j in matched_p1]
+			fps = [j for j in range(len(filtered_pd)) if not j in matched_pd]
 			fns = [i for i in range(len(filtered_gt)) if not i in matched_gt]
-			conditions[key]['tp'] += len(tps)
-			conditions[key]['fp'] += len(fps) + len(matched_gt) - len(tps)
-			conditions[key]['fn'] += len(fns)
 
-	for key in conditions:
+			count_tp = len(tps)
+			count_fp = len(fps) + len(matched_gt) - len(tps)
+			count_fn = len(fns)
 
-		count_tp = conditions[key]['tp']
-		count_fp = conditions[key]['fp']
-		count_fn = conditions[key]['fn']
+			scores[c['name']]['tp'] += count_tp
+			scores[c['name']]['fp'] += count_fp
+			scores[c['name']]['fn'] += count_fn
+
+			row[c['name'] + '_tp'] = count_tp
+			row[c['name'] + '_fp'] = count_fp
+			row[c['name'] + '_fn'] = count_fn
+		df = df.append(row, ignore_index=True)
+
+	df_path = 'eval.csv'
+	df.to_csv(df_path)  
+
+	for c in categories:
+
+		count_tp = scores[c['name']]['tp']
+		count_fp = scores[c['name']]['fp']
+		count_fn = scores[c['name']]['fn']
 		precision = count_tp / (count_tp + count_fp)
 		recall = count_tp / (count_tp + count_fn)
 		f1 = 2 * precision * recall / (precision + recall)
 
-		print('\t', key)
+		print('\t', c['name'])
 		print('\t\tTrue Positive  =', count_tp)
 		print('\t\tFalse Positive =', count_fp)
 		print('\t\tFalse Negative =', count_fn)
 		print('\t\tPrecision      =', round(precision, 3))
 		print('\t\tRecall         =', round(recall, 3))
 		print('\t\tF1 score       =', round(f1, 3))
+
+	print('total_instances', total_instances)
+	print('checksum_scores', checksum(scores))
